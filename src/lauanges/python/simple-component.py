@@ -36,11 +36,12 @@ EP_TYPES = [zmq.PUB, zmq.SUB, zmq.PUSH, zmq.PULL, zmq.REQ, zmq.REP,
 ctx = zmq.Context()
 
 
-def init(init_msg):
+def config(init_msg):
 
     eps = init_msg['eps']
     ss = []
     for ep in eps:
+        sout = ep['stdout_socket']
         s = ctx.socket(ep['socket_type'])
         s.connect(ep['end_point'])
         # setsockopts
@@ -55,7 +56,7 @@ def init(init_msg):
 
 
 def kill():
-    pass
+    ctx.destroy()
 
 
 def task(msg):
@@ -90,12 +91,10 @@ def run():
 
         if flag:
             flag = False
-            ss = init(s.recv())
+            ss = config(s.recv())
 
         for s in ss:
+
             if s in socks:
-                task(s.recv)
-
-
-if __name__ == "main":
-    run()
+                task(s.recv())
+    kill()

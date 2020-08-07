@@ -1,0 +1,17 @@
+component_configuration:
+  zmq_sockets:
+    inputs: 
+      - stdin:
+          'id'
+          'zmq_socket_type'
+          'topics'
+    outputs:
+      - stdout:
+          'id'
+          'zmq_socket_type'
+          'topics'
+
+wcstwwcstw
+wc5twwc5tw
+wcstwWc5tw
+wcstw!Wc5tw!
