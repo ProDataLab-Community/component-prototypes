@@ -1,0 +1,4 @@
+zmq_socket:
+  id:               ''
+  zmq_socket_type:  0
+  topics:           ''              # only needed for zmq.SUB

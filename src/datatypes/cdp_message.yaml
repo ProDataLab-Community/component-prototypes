@@ -1,0 +1,3 @@
+cdp_message:
+  id:         ''         # 8 bit array
+  task_data:  ''         # blob handled by task

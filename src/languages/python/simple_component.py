@@ -81,20 +81,39 @@ def run():
     plr.register(s, zmq.POLLIN)
 
     # Process messages from both sockets
-    flag = True
-    ss = []
+
     while True:
         try:
-            socks = dict(plr.poll())
-        except KeyboardInterrupt:
-            break
+            plr_ss = dict(plr.poll())
+        except:
+            KeyboardInterrupt:
+                break
+        for ps in plr_ss:
+            msg = s.recv()
+            id  = msg['id']
 
-        if flag:
-            flag = False
-            ss = config(s.recv())
+    # # Initialize poll set
+    # plr = zmq.Poller()
 
-        for s in ss:
+    # # Initialize configuration socket. The first msg is alway the configuration message.
+    # s = ctx.socket(zmq.SUB)
+    # plr.register(s, zmq.POLLIN)
 
-            if s in socks:
-                task(s.recv())
-    kill()
+    # # Process messages from both sockets
+    # flag = True
+    # ss = []
+    # while True:
+    #     try:
+    #         socks = dict(plr.poll())
+    #     except KeyboardInterrupt:
+    #         break
+
+    #     if flag:
+    #         flag = False
+    #         ss = config(s.recv())
+
+    #     for s in ss:
+
+    #         if s in socks:
+    #             task(s.recv())
+    # kill()
