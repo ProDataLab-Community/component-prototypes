@@ -1,7 +1,6 @@
 import zmq
-import time
 import msgpack as mp
-import array as arr
+import task
 
 
 """
@@ -9,10 +8,8 @@ PUB = 1
 SUB = 2
 REQ = 3
 REP = 4
-
 PULL = 7
 PUSH = 8
-
 
 ep = end_point
 eps = ep_list
@@ -22,45 +19,54 @@ ctx = zmq.Context()
 ss = socket_list
 t = topic
 
-init_msg:
-  {'eps': [{ 'socket_type': X, 'endpoint': Y, sub_topics:['blah', 'blip] }]}
-
-task_msg:
-    this is a blob that 'task' function knows how to handle
-
 """
 
 EP_TYPES = [zmq.PUB, zmq.SUB, zmq.PUSH, zmq.PULL, zmq.REQ, zmq.REP,
             zmq.XPUB, zmq.XPUB, zmq.XSUB, zmq.STREAM, zmq.DEALER, zmq.ROUTER]
 
 ctx = zmq.Context()
+plr = zmq.Poller()
 
 
-def config(init_msg):
 
-    eps = init_msg['eps']
-    ss = []
-    for ep in eps:
-        sout = ep['stdout_socket']
-        s = ctx.socket(ep['socket_type'])
-        s.connect(ep['end_point'])
-        # setsockopts
-        if ep['socket_type'] == zmq.SUB:
-            ts = ""
-            for t in ep['sub_topics']:
-                ts += t + ','
-            ts = ts[:-2]
-            s.setsockopt(zmq.SUBSCRIBE, ts)
-        ss.append(s)
-    return ss
+
+def task(msg):
+    # COPY AND PASTE CODE HERE       ..for now
+    pass
+
+
+
+
+
+def config(config_msg):
+
+    inputs  = config_msg['zmq_sockets']['inputs']
+    outputs = config_msg['zmq_sockets']['outputs']
+    in_sockets     = []
+    out_sockets    = []
+
+    for i in inputs:
+        st = i['zmq_socket_type']
+        ep = i['endpoint']
+        s = ctx.socket(st)
+        s.connect(ep)
+        s_type = s.get(zmq.ZMQ_TYPE)
+        if s_type == zmq.SUB:
+            s.setsockopt(zmq.SUBSCRIBE, b'10001')
+        plr.register(s, zmq.POLLIN)
+        in_sockets.append(s)
+    for o in outputs:
+        st = o['zmq_socket_type']
+        ep = o['endpoint']
+        s = ctx.socket(st)
+        s.bind(ep)
+        s_type = s.get(zmq.ZMQ_TYPE)
+        plr.register(s, zmq.POLLOUT)
+        out_sockets.append
 
 
 def kill():
     ctx.destroy()
-
-
-def task(msg):
-    pass
 
 
 def encode(msg):
@@ -71,49 +77,39 @@ def decode(pkt):
     return mp.unpackb(pkt)
 
 
-def run():
+
+def run(config_endpoint):
 
     # Initialize poll set
     plr = zmq.Poller()
 
     # Initialize configuration socket. The first msg is alway the configuration message.
     s = ctx.socket(zmq.SUB)
+    s.connect(config_endpoint)
+    s.setsockopt(zmq.SUBSCRIBE, b'10001')
     plr.register(s, zmq.POLLIN)
 
-    # Process messages from both sockets
+    # Process messages from sockets
 
     while True:
         try:
             plr_ss = dict(plr.poll())
-        except:
-            KeyboardInterrupt:
+
+        except KeyboardInterrupt:
                 break
         for ps in plr_ss:
-            msg = s.recv()
+                                            # FIXME .. handle POLLERR, etc.       zmq.POLLERR, zmq.POLLOUT
+            if plr_ss[ps] != zmq.POLLIN:
+                continue                        
+            msg = decode(ps.recv())
             id  = msg['id']
-
-    # # Initialize poll set
-    # plr = zmq.Poller()
-
-    # # Initialize configuration socket. The first msg is alway the configuration message.
-    # s = ctx.socket(zmq.SUB)
-    # plr.register(s, zmq.POLLIN)
-
-    # # Process messages from both sockets
-    # flag = True
-    # ss = []
-    # while True:
-    #     try:
-    #         socks = dict(plr.poll())
-    #     except KeyboardInterrupt:
-    #         break
-
-    #     if flag:
-    #         flag = False
-    #         ss = config(s.recv())
-
-    #     for s in ss:
-
-    #         if s in socks:
-    #             task(s.recv())
-    # kill()
+            task_data = msg['task_data']
+                                            # NOTE: this is temporary simplification
+            if id == 'configure':        
+                config(task_data)
+                continue
+            if id == 'kill':
+                kill()
+            msg = task(task_data)
+            ps.send(encode(msg))
+    kill()
