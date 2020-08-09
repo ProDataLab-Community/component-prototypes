@@ -1,6 +1,6 @@
 import zmq
 import msgpack as mp
-import task
+from task import task
 
 """
 PUB = 1
@@ -25,7 +25,6 @@ ctx = zmq.Context()
 plr = zmq.Poller()
 
 def config(config_msg):
-
     inputs  = config_msg['zmq_sockets']['inputs']
     outputs = config_msg['zmq_sockets']['outputs']
     in_sockets     = []
@@ -60,8 +59,6 @@ def decode(pkt):
     return mp.unpackb(pkt)
 
 def run(config_endpoint):
-                                # Initialize poll set
-    plr = zmq.Poller()
                                 # Initialize configuration socket. The first msg is alway the configuration message.
     s = ctx.socket(zmq.SUB)
     s.connect(config_endpoint)
